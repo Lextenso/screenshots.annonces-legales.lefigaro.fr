@@ -52,19 +52,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       res.flushHeaders();
 
-      req.on("close", () => {
-        aborted = true;
-        console.log("Client disconnected, aborting capture process");
-        screenshotService.abort();
-        screenshotService.cleanup().catch(console.error);
-      });
+      const handleDisconnect = () => {
+        if (!aborted) {
+          aborted = true;
+          console.log("Client disconnected, aborting capture process");
+          screenshotService.abort();
+          screenshotService.cleanup().catch(console.error);
+        }
+      };
 
-      res.on("close", () => {
-        aborted = true;
-        console.log("Response closed, aborting capture process");
-        screenshotService.abort();
-        screenshotService.cleanup().catch(console.error);
-      });
+      req.on("close", handleDisconnect);
+      res.on("close", handleDisconnect);
 
       screenshotService.on("progress", (progress) => {
         if (!aborted && !res.writableEnded) {

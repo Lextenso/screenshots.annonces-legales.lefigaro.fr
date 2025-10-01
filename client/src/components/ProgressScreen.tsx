@@ -134,11 +134,13 @@ export default function ProgressScreen({
     startCapture();
 
     return () => {
-      if (readerController) {
-        readerController.cancel();
-      }
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
+      if (abortedRef.current) {
+        if (readerController) {
+          readerController.cancel();
+        }
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+        }
       }
     };
   }, [department, startDate]);
