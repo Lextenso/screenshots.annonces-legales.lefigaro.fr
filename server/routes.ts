@@ -51,6 +51,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "Transfer-Encoding": "chunked",
       });
       res.flushHeaders();
+      
+      console.log(`[${department}] SSE connection established, starting capture process`);
 
       req.on("close", () => {
         aborted = true;
