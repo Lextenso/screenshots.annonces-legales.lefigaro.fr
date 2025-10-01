@@ -34,6 +34,13 @@ export default function ProgressScreen({
   });
   const abortControllerRef = useRef<AbortController | null>(null);
   const abortedRef = useRef(false);
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
+
+  useEffect(() => {
+    onSuccessRef.current = onSuccess;
+    onErrorRef.current = onError;
+  }, [onSuccess, onError]);
 
   useEffect(() => {
     let readerController: ReadableStreamDefaultReader<Uint8Array> | null = null;
@@ -86,10 +93,10 @@ export default function ProgressScreen({
                 if (data.type === "progress") {
                   setProgress(data.data);
                 } else if (data.type === "complete") {
-                  onSuccess(data.data);
+                  onSuccessRef.current(data.data);
                   return;
                 } else if (data.type === "error") {
-                  onError(data.data);
+                  onErrorRef.current(data.data);
                   return;
                 }
               } catch (parseError) {
@@ -103,9 +110,9 @@ export default function ProgressScreen({
           try {
             const data = JSON.parse(buffer.substring(6));
             if (data.type === "complete") {
-              onSuccess(data.data);
+              onSuccessRef.current(data.data);
             } else if (data.type === "error") {
-              onError(data.data);
+              onErrorRef.current(data.data);
             }
           } catch (parseError) {
             console.error("Failed to parse final SSE data:", buffer, parseError);
@@ -116,7 +123,7 @@ export default function ProgressScreen({
           return;
         }
         if (!abortedRef.current) {
-          onError({
+          onErrorRef.current({
             message: error.message || "Erreur lors de la capture",
             code: "CAPTURE_ERROR",
           });
@@ -134,7 +141,7 @@ export default function ProgressScreen({
         abortControllerRef.current.abort();
       }
     };
-  }, [department, startDate, onSuccess, onError]);
+  }, [department, startDate]);
 
   const handleCancel = () => {
     abortedRef.current = true;
