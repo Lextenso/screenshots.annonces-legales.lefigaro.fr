@@ -1,0 +1,23 @@
+1) L'écran principal doit demander à l'utilisateur de choisir :
+- un département français via une liste déroulante affichant le numéro du département suivi d'un tiret et de son nom. Cette liste déroulante doit permettre une recherche par mot clé.
+- une date de début, qui permet de définir la période de 7 semaines.
+
+2) Une fois le département et la date choisie, appeler l'API des articles du Figaro disponible à l'adresse : https://infoslocales.ccmbg.com/export.php
+Cette API renvoie les informations sous le format JSON suivant :
+{"NUMERO_DEPARTEMENT1":[{"url":"URL1","date":"01/10/2025"},{"url":"URL2","date":"30/09/2025"}],"NUMERO_DEPARTEMENT2":[{"url":"URL3","date":"01/10/2025"},{"url":"URL4","date":"30/09/2025"}]}
+Filtre ces données pour ne conserver que les urls et dates des articles concernant le département sélectionné, et dans la période de date sélectionnée.
+=> Affiche alors à l'utilisateur le nombre d'articles sur cette période de date, pour lui demander de confirmer qu'il souhaite bien faire les captures de tous ces articles.
+
+3) Si l'utilisateur confirme, alors lancer en parallèle les screenshots de tous les articles avec l'outil Python shot-scrapper (préalablement installé via pip install shot-scraper && shot-scraper install).
+Chaque screenshot devra s'appeler "[DATE AU FORMAT Y-m-d] Département [NUMERO DEPARTEMENT] Le Figaro article [NUMERO INCREMENTAL DU SCREENSHOT]
+
+Voici les paramètres à passer à shot scrapper : 
+--width 1030 
+--javascript \"document.body.insertAdjacentHTML('beforeend', '<style>.layout_right, #appconsent, .fh-ft__col, #tabbar, #hbv-native-inarticle, .fig-newsletter-box, .fig-ad-content, .fig-ad-content--special, .fig-right, .fig-recommended, .fig-suggested, .fig-seo-footer, .etx-player, .fig-comments, .fig-embed, #bottom, .fh-ft__expanded, .fig-body-link {display:none !important;}  .layout_breadcrumb, .layout_main{grid-column: 2/4;}  .fig-main-col{ max-width:90% !important; } .fig-body, body{margin-bottom:0px !important;} .fig-lazy img[data-srcset], .fig-lazy img[srcset] {transition-duration:0s}</style>'); document.querySelectorAll('.fig-lazy>img').forEach(el => { if (el.getAttribute('data-srcset')!= null) { el.setAttribute('srcset',el.getAttribute('data-srcset'));}});\"
+
+4) Une fois les captures effectuées, fais un ZIP de toutes les images que tu nommeras "LeFigaro-département[NUMERO DEPARTEMENT].zip"
+
+5) Envoie ce zip sur le serveur SFTP dont les informations de connexion sont fournies en Secrets [SFTP-SERVEUR] [SFTP-LOGIN] [SFTP-PASSWORD] en déposant le fichier dans le répertoire [SFTP-DIRECTORY]/[ANNEE COURANTE AU FORMAT YYYY]
+
+6) Si tout s'est bien passé, affiche un message de succès en indiquant le lien pour télécharger le zip suivant :
+https://habilitations.annonces-legales.lefigaro.fr/?[NUMERO DEPARTEMENT]
