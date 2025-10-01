@@ -43,14 +43,12 @@ export default function ProgressScreen({
   }, [onSuccess, onError]);
 
   useEffect(() => {
-    console.log("ProgressScreen useEffect triggered - starting capture");
     let readerController: ReadableStreamDefaultReader<Uint8Array> | null = null;
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
     const startCapture = async () => {
       try {
-        console.log("Sending fetch request to /api/capture/start");
         const response = await fetch("/api/capture/start", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -136,7 +134,6 @@ export default function ProgressScreen({
     startCapture();
 
     return () => {
-      console.log("ProgressScreen useEffect cleanup triggered - aborting");
       if (readerController) {
         readerController.cancel();
       }
