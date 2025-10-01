@@ -96,6 +96,7 @@ The progress screen uses Server-Sent Events (SSE) to receive real-time updates f
   - `SFTP_SERVEUR` or `SFTP_SERVER`: Server hostname
   - `SFTP_LOGIN` or `SFTP_USERNAME`: Authentication username
   - `SFTP_PASSWORD`: Authentication password
+  - `SFTP_PORT`: Server port (defaults to 22 if not specified)
   - `SFTP_DIRECTORY`: Base upload directory (defaults to `/uploads`)
 - Files organized in year-based subdirectories
 - Download URLs follow pattern: `https://habilitations.annonces-legales.lefigaro.fr/?[DEPARTMENT_NUMBER]`

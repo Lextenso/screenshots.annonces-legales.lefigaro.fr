@@ -7,6 +7,7 @@ export class SftpService {
     host: string;
     username: string;
     password: string;
+    port: number;
     baseDirectory: string;
   };
 
@@ -16,6 +17,7 @@ export class SftpService {
     const host = process.env.SFTP_SERVEUR || process.env.SFTP_SERVER;
     const username = process.env.SFTP_LOGIN || process.env.SFTP_USERNAME;
     const password = process.env.SFTP_PASSWORD;
+    const port = process.env.SFTP_PORT ? parseInt(process.env.SFTP_PORT, 10) : 22;
     const baseDirectory = process.env.SFTP_DIRECTORY || "/uploads";
 
     if (!host || !username || !password) {
@@ -26,6 +28,7 @@ export class SftpService {
       host,
       username,
       password,
+      port,
       baseDirectory,
     };
   }
@@ -35,7 +38,7 @@ export class SftpService {
       host: this.config.host,
       username: this.config.username,
       password: this.config.password,
-      port: 22,
+      port: this.config.port,
     });
   }
 
