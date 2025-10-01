@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Camera } from "lucide-react";
 import StepIndicator from "@/components/StepIndicator";
 import SelectionForm from "@/components/SelectionForm";
@@ -30,15 +30,15 @@ export default function Home() {
     setCurrentStep("progress");
   };
 
-  const handleSuccess = (captureResult: CaptureResult) => {
+  const handleSuccess = useCallback((captureResult: CaptureResult) => {
     setResult(captureResult);
     setCurrentStep("success");
-  };
+  }, []);
 
-  const handleError = (errorData: { message: string; code: string }) => {
+  const handleError = useCallback((errorData: { message: string; code: string }) => {
     setError(errorData);
     setCurrentStep("error");
-  };
+  }, []);
 
   const handleGoBack = () => {
     setCurrentStep("selection");
