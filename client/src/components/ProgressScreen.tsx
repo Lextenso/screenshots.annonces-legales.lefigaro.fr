@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, ListChecks, CheckCircle2, Circle, X } from "lucide-react";
 import { CaptureResult } from "@shared/schema";
@@ -32,112 +32,122 @@ export default function ProgressScreen({
     completed: 0,
     stage: "fetching",
   });
-  const [aborted, setAborted] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const abortedRef = useRef(false);
 
   useEffect(() => {
-    let eventSource: EventSource | null = null;
+    let readerController: ReadableStreamDefaultReader<Uint8Array> | null = null;
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     const startCapture = async () => {
       try {
-        eventSource = new EventSource(
-          `/api/capture/start?department=${department}&startDate=${startDate}`
-        );
-
-        eventSource.addEventListener("message", (event) => {
-          const data = JSON.parse(event.data);
-
-          if (data.type === "progress") {
-            setProgress(data.data);
-          } else if (data.type === "complete") {
-            onSuccess(data.data);
-            eventSource?.close();
-          } else if (data.type === "error") {
-            onError(data.data);
-            eventSource?.close();
-          }
+        const response = await fetch("/api/capture/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ department, startDate }),
+          signal: controller.signal,
         });
 
-        eventSource.onerror = (error) => {
-          console.error("EventSource error:", error);
-          if (!aborted) {
-            onError({
-              message: "Connexion perdue avec le serveur",
-              code: "CONNECTION_ERROR",
-            });
-          }
-          eventSource?.close();
-        };
-      } catch (error: any) {
-        onError({
-          message: error.message || "Erreur lors du démarrage de la capture",
-          code: "START_ERROR",
-        });
-      }
-    };
-
-    // Use a POST request via fetch to start the process
-    fetch("/api/capture/start", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ department, startDate }),
-    })
-      .then(async (response) => {
         if (!response.ok) {
           const error = await response.json();
           throw new Error(error.message);
         }
 
-        // Read the SSE stream
         const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
-
         if (!reader) {
           throw new Error("No response body");
         }
 
+        readerController = reader;
+        const decoder = new TextDecoder();
+        let buffer = "";
+
         while (true) {
           const { done, value } = await reader.read();
-          if (done || aborted) break;
+          
+          if (value) {
+            buffer += decoder.decode(value, { stream: true });
+          }
+          
+          if (done) {
+            buffer += decoder.decode();
+            break;
+          }
 
-          const chunk = decoder.decode(value);
-          const lines = chunk.split("\n");
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
 
           for (const line of lines) {
             if (line.startsWith("data: ")) {
-              const data = JSON.parse(line.substring(6));
+              try {
+                const data = JSON.parse(line.substring(6));
 
-              if (data.type === "progress") {
-                setProgress(data.data);
-              } else if (data.type === "complete") {
-                onSuccess(data.data);
-                return;
-              } else if (data.type === "error") {
-                onError(data.data);
-                return;
+                if (data.type === "progress") {
+                  setProgress(data.data);
+                } else if (data.type === "complete") {
+                  onSuccess(data.data);
+                  return;
+                } else if (data.type === "error") {
+                  onError(data.data);
+                  return;
+                }
+              } catch (parseError) {
+                console.error("Failed to parse SSE data:", line, parseError);
               }
             }
           }
         }
-      })
-      .catch((error) => {
-        if (!aborted) {
+
+        if (buffer.startsWith("data: ")) {
+          try {
+            const data = JSON.parse(buffer.substring(6));
+            if (data.type === "complete") {
+              onSuccess(data.data);
+            } else if (data.type === "error") {
+              onError(data.data);
+            }
+          } catch (parseError) {
+            console.error("Failed to parse final SSE data:", buffer, parseError);
+          }
+        }
+      } catch (error: any) {
+        if (error.name === "AbortError") {
+          return;
+        }
+        if (!abortedRef.current) {
           onError({
             message: error.message || "Erreur lors de la capture",
             code: "CAPTURE_ERROR",
           });
         }
-      });
+      }
+    };
+
+    startCapture();
 
     return () => {
-      eventSource?.close();
+      if (readerController) {
+        readerController.cancel();
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
     };
-  }, [department, startDate, aborted]);
+  }, [department, startDate, onSuccess, onError]);
 
   const handleCancel = () => {
-    setAborted(true);
+    abortedRef.current = true;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
     toast({
       title: "Processus annulé",
       description: "La capture a été interrompue",
+    });
+    onError({
+      message: "Capture annulée par l'utilisateur",
+      code: "USER_CANCELLED",
     });
   };
 

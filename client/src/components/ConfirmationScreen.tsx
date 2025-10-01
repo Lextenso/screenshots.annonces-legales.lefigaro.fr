@@ -101,11 +101,12 @@ export default function ConfirmationScreen({
         </Button>
         <Button
           onClick={onConfirm}
-          className="px-8 py-3 bg-primary text-primary-foreground hover:opacity-90 shadow-md"
+          disabled={articleCount === 0}
+          className="px-8 py-3 bg-primary text-primary-foreground hover:opacity-90 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
           data-testid="button-start-capture"
         >
           <Camera className="mr-2 w-4 h-4" />
-          Lancer les captures
+          {articleCount === 0 ? "Aucun article à capturer" : "Lancer les captures"}
         </Button>
       </div>
     </div>

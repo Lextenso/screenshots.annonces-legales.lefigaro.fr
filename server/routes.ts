@@ -41,37 +41,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const screenshotService = new ScreenshotService();
       const sftpService = new SftpService();
       const startTime = Date.now();
+      let aborted = false;
 
       // Set up SSE for progress updates
       res.writeHead(200, {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
-        Connection: "keep-alive",
+        "Connection": "keep-alive",
+        "Transfer-Encoding": "chunked",
+      });
+      res.flushHeaders();
+
+      req.on("close", () => {
+        aborted = true;
+        console.log("Client disconnected, aborting capture process");
+        screenshotService.abort();
+        screenshotService.cleanup().catch(console.error);
+      });
+
+      res.on("close", () => {
+        aborted = true;
+        console.log("Response closed, aborting capture process");
+        screenshotService.abort();
+        screenshotService.cleanup().catch(console.error);
       });
 
       screenshotService.on("progress", (progress) => {
-        res.write(`data: ${JSON.stringify({ type: "progress", data: progress })}\n\n`);
+        if (!aborted && !res.writableEnded) {
+          res.write(`data: ${JSON.stringify({ type: "progress", data: progress })}\n\n`);
+        }
       });
+
+      let zipPath: string | null = null;
 
       try {
         // Step 1: Capture screenshots
         const filePaths = await screenshotService.captureArticles(department, startDate);
+        
+        if (aborted) {
+          return;
+        }
 
         // Step 2: Create ZIP file
-        res.write(`data: ${JSON.stringify({ type: "progress", data: { stage: "zipping", completed: filePaths.length, total: filePaths.length } })}\n\n`);
+        if (!aborted && !res.writableEnded) {
+          res.write(`data: ${JSON.stringify({ type: "progress", data: { stage: "zipping", completed: filePaths.length, total: filePaths.length } })}\n\n`);
+        }
 
         const zipFileName = `LeFigaro-département${department}.zip`;
-        const zipPath = path.join(process.cwd(), "screenshots", zipFileName);
+        zipPath = path.join(screenshotService.getScreenshotsDir(), zipFileName);
         
         await createZipFile(filePaths, zipPath);
+        
+        if (aborted) {
+          return;
+        }
         
         const stats = fs.statSync(zipPath);
         const zipSize = formatBytes(stats.size);
 
         // Step 3: Upload to SFTP
-        res.write(`data: ${JSON.stringify({ type: "progress", data: { stage: "uploading", completed: filePaths.length, total: filePaths.length } })}\n\n`);
+        if (!aborted && !res.writableEnded) {
+          res.write(`data: ${JSON.stringify({ type: "progress", data: { stage: "uploading", completed: filePaths.length, total: filePaths.length } })}\n\n`);
+        }
 
         const remotePath = await sftpService.uploadFile(zipPath, zipFileName);
+        
+        if (aborted) {
+          return;
+        }
 
         // Calculate total time
         const totalTime = formatDuration(Date.now() - startTime);
@@ -89,29 +126,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           uploadDate: format(new Date(), "dd/MM/yyyy HH:mm"),
         };
 
-        res.write(`data: ${JSON.stringify({ type: "complete", data: result })}\n\n`);
-        res.end();
-
-        // Cleanup
-        await screenshotService.cleanup();
-        try {
-          fs.unlinkSync(zipPath);
-        } catch (error) {
-          console.error("Error cleaning up ZIP file:", error);
+        if (!aborted && !res.writableEnded) {
+          res.write(`data: ${JSON.stringify({ type: "complete", data: result })}\n\n`);
+          res.end();
         }
 
       } catch (error: any) {
         console.error("Capture process error:", error);
-        res.write(`data: ${JSON.stringify({ 
-          type: "error", 
-          data: { 
-            message: error.message,
-            code: error.code || "CAPTURE_ERROR",
-          } 
-        })}\n\n`);
-        res.end();
-
+        if (!aborted && !res.writableEnded) {
+          res.write(`data: ${JSON.stringify({ 
+            type: "error", 
+            data: { 
+              message: error.message,
+              code: error.code || "CAPTURE_ERROR",
+            } 
+          })}\n\n`);
+          res.end();
+        }
+      } finally {
         await screenshotService.cleanup();
+        if (zipPath) {
+          try {
+            fs.unlinkSync(zipPath);
+          } catch (error) {
+            console.error("Error cleaning up ZIP file:", error);
+          }
+        }
       }
 
     } catch (error: any) {
