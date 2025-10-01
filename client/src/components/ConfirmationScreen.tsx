@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, FileText, ArrowLeft, Camera } from "lucide-react";
+import { FileText, ArrowLeft, Camera } from "lucide-react";
 import { addWeeks, format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -69,22 +69,6 @@ export default function ConfirmationScreen({
           <div className="flex items-center justify-between text-sm mt-2">
             <span className="text-muted-foreground">Date de fin :</span>
             <span className="font-semibold">{formattedEnd}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-accent border border-border rounded-lg p-4 mb-6">
-        <div className="flex items-start space-x-3">
-          <AlertTriangle className="text-chart-3 text-lg mt-0.5" />
-          <div className="flex-1">
-            <h4 className="font-semibold text-foreground text-sm mb-1">
-              Attention
-            </h4>
-            <p className="text-xs text-muted-foreground">
-              La capture de {articleCount} articles peut prendre plusieurs
-              minutes. Assurez-vous que votre connexion internet est stable et
-              que vous disposez de suffisamment d'espace disque.
-            </p>
           </div>
         </div>
       </div>
