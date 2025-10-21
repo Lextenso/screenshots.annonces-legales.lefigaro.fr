@@ -87,6 +87,99 @@ L'application sera accessible sur `http://localhost:5000`
 3. **Progression** : Suivez l'avancement en temps réel
 4. **Résultat** : Téléchargez le fichier ZIP via le lien généré
 
+## 🌐 Déploiement sur d'autres hébergeurs
+
+### Installation complète
+
+```bash
+# 1. Cloner le projet
+git clone <votre-repo>
+cd <nom-du-projet>
+
+# 2. Installer les dépendances Node.js
+npm install
+
+# 3. Installer les dépendances Python
+pip install -r requirements.txt
+
+# 4. Installer les navigateurs Playwright
+shot-scraper install
+```
+
+### Dépendances système (Linux/Ubuntu)
+
+Sur des hébergeurs Linux, installez les bibliothèques système nécessaires à Playwright :
+
+```bash
+# Ubuntu/Debian
+sudo apt-get update
+sudo apt-get install -y \
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libdbus-1-3 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libasound2
+```
+
+### Variables d'environnement
+
+Créez un fichier `.env` à la racine du projet :
+
+```env
+SFTP_SERVEUR=votre-serveur.com
+SFTP_LOGIN=votre-username
+SFTP_PASSWORD=votre-password
+SFTP_PORT=22
+SFTP_DIRECTORY=/uploads
+SESSION_SECRET=votre-secret-aleatoire-securise
+```
+
+### Build et démarrage
+
+```bash
+# Développement
+npm run dev
+
+# Production
+npm run build    # Si un script de build est disponible
+npm start
+```
+
+### Configuration serveur
+
+Pour un déploiement en production, configurez :
+
+1. **Reverse proxy** (nginx/Apache) pour servir l'application sur le port 80/443
+2. **Process manager** (PM2, systemd) pour garder l'application active
+3. **HTTPS** avec certificat SSL (Let's Encrypt)
+4. **Firewall** pour limiter les accès
+
+Exemple avec PM2 :
+```bash
+npm install -g pm2
+pm2 start npm --name "figaro-screenshots" -- start
+pm2 save
+pm2 startup
+```
+
+### Notes importantes
+
+- Assurez-vous que Python 3.11+ et Node.js 18+ sont installés
+- L'environnement doit avoir accès à Internet pour télécharger les navigateurs Playwright
+- Le serveur SFTP doit être accessible depuis votre hébergeur
+- Prévoyez suffisamment d'espace disque pour les captures temporaires (quelques centaines de Mo)
+
 ## 🔧 Configuration technique
 
 ### Capture de screenshots
