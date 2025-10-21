@@ -85,14 +85,6 @@ export default function SuccessScreen({
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">
-              Emplacement SFTP
-            </span>
-            <span className="text-xs font-mono" data-testid="text-sftp-path">
-              {result.sftpPath}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">
               Date d'upload
             </span>
             <span className="text-sm" data-testid="text-upload-date">
