@@ -34,9 +34,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Endpoint to start capture process
-  app.post("/api/capture/start", async (req, res) => {
+  app.get("/api/capture/start/:department/:startDate", async (req, res) => {
     try {
-      const { department, startDate } = captureRequestSchema.parse(req.body);
+      const { department, startDate } = req.params;
       
       const screenshotService = new ScreenshotService();
       const sftpService = new SftpService();

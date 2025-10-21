@@ -33,7 +33,6 @@ export default function ProgressScreen({
     stage: "fetching",
   });
   const abortControllerRef = useRef<AbortController | null>(null);
-  const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
   const abortedRef = useRef(false);
   const onSuccessRef = useRef(onSuccess);
   const onErrorRef = useRef(onError);
@@ -44,108 +43,49 @@ export default function ProgressScreen({
   }, [onSuccess, onError]);
 
   useEffect(() => {
-    console.log("[ProgressScreen] useEffect MOUNT - Starting capture");
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
+    console.log("[ProgressScreen] useEffect MOUNT - Starting capture with EventSource");
+    
+    const eventSource = new EventSource(`/api/capture/start/${encodeURIComponent(department)}/${encodeURIComponent(startDate)}`);
+    
+    eventSource.onopen = () => {
+      console.log("[ProgressScreen] EventSource connection opened");
+    };
 
-    const startCapture = async () => {
+    eventSource.onmessage = (event) => {
+      console.log("[ProgressScreen] EventSource message received:", event.data);
       try {
-        console.log("[ProgressScreen] Initiating fetch to /api/capture/start");
-        const response = await fetch("/api/capture/start", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ department, startDate }),
-          signal: controller.signal,
-        });
-        console.log("[ProgressScreen] Fetch response received, status:", response.status);
+        const data = JSON.parse(event.data);
 
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message);
+        if (data.type === "progress") {
+          setProgress(data.data);
+        } else if (data.type === "complete") {
+          eventSource.close();
+          onSuccessRef.current(data.data);
+        } else if (data.type === "error") {
+          eventSource.close();
+          onErrorRef.current(data.data);
         }
-
-        const reader = response.body?.getReader();
-        if (!reader) {
-          throw new Error("No response body");
-        }
-
-        readerRef.current = reader;
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          
-          if (value) {
-            buffer += decoder.decode(value, { stream: true });
-          }
-          
-          if (done) {
-            buffer += decoder.decode();
-            break;
-          }
-
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              try {
-                const data = JSON.parse(line.substring(6));
-
-                if (data.type === "progress") {
-                  setProgress(data.data);
-                } else if (data.type === "complete") {
-                  onSuccessRef.current(data.data);
-                  return;
-                } else if (data.type === "error") {
-                  onErrorRef.current(data.data);
-                  return;
-                }
-              } catch (parseError) {
-                console.error("Failed to parse SSE data:", line, parseError);
-              }
-            }
-          }
-        }
-
-        if (buffer.startsWith("data: ")) {
-          try {
-            const data = JSON.parse(buffer.substring(6));
-            if (data.type === "complete") {
-              onSuccessRef.current(data.data);
-            } else if (data.type === "error") {
-              onErrorRef.current(data.data);
-            }
-          } catch (parseError) {
-            console.error("Failed to parse final SSE data:", buffer, parseError);
-          }
-        }
-      } catch (error: any) {
-        if (error.name === "AbortError") {
-          return;
-        }
-        if (!abortedRef.current) {
-          onErrorRef.current({
-            message: error.message || "Erreur lors de la capture",
-            code: "CAPTURE_ERROR",
-          });
-        }
+      } catch (parseError) {
+        console.error("Failed to parse SSE data:", event.data, parseError);
       }
     };
 
-    startCapture();
+    eventSource.onerror = (error) => {
+      console.error("[ProgressScreen] EventSource error:", error);
+      eventSource.close();
+      if (!abortedRef.current) {
+        onErrorRef.current({
+          message: "Erreur de connexion au serveur",
+          code: "CONNECTION_ERROR",
+        });
+      }
+    };
+
+    abortControllerRef.current = { abort: () => eventSource.close() } as any;
 
     return () => {
-      console.log("[ProgressScreen] useEffect CLEANUP - Aborting connection");
-      if (readerRef.current) {
-        console.log("[ProgressScreen] Cancelling reader");
-        readerRef.current.cancel().catch(() => {});
-      }
-      if (controller && !controller.signal.aborted) {
-        console.log("[ProgressScreen] Aborting controller");
-        controller.abort();
-      }
+      console.log("[ProgressScreen] useEffect CLEANUP - Closing EventSource");
+      eventSource.close();
     };
   }, [department, startDate]);
 
