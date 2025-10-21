@@ -44,17 +44,20 @@ export default function ProgressScreen({
   }, [onSuccess, onError]);
 
   useEffect(() => {
+    console.log("[ProgressScreen] useEffect MOUNT - Starting capture");
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
     const startCapture = async () => {
       try {
+        console.log("[ProgressScreen] Initiating fetch to /api/capture/start");
         const response = await fetch("/api/capture/start", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ department, startDate }),
           signal: controller.signal,
         });
+        console.log("[ProgressScreen] Fetch response received, status:", response.status);
 
         if (!response.ok) {
           const error = await response.json();
@@ -134,10 +137,13 @@ export default function ProgressScreen({
     startCapture();
 
     return () => {
+      console.log("[ProgressScreen] useEffect CLEANUP - Aborting connection");
       if (readerRef.current) {
+        console.log("[ProgressScreen] Cancelling reader");
         readerRef.current.cancel().catch(() => {});
       }
       if (controller && !controller.signal.aborted) {
+        console.log("[ProgressScreen] Aborting controller");
         controller.abort();
       }
     };
