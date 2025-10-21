@@ -35,7 +35,6 @@ export default function ProgressScreen({
   const abortControllerRef = useRef<AbortController | null>(null);
   const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
   const abortedRef = useRef(false);
-  const hasStartedRef = useRef(false);
   const onSuccessRef = useRef(onSuccess);
   const onErrorRef = useRef(onError);
 
@@ -45,11 +44,6 @@ export default function ProgressScreen({
   }, [onSuccess, onError]);
 
   useEffect(() => {
-    if (hasStartedRef.current) {
-      return;
-    }
-    hasStartedRef.current = true;
-
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
