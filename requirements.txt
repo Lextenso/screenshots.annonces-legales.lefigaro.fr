@@ -1,0 +1,10 @@
+# Python dependencies for Le Figaro Screenshot Capture Application
+
+# Main dependency - screenshot capture tool
+shot-scraper>=1.4.1
+
+# Automatically includes:
+# - playwright>=1.40.0 (browser automation)
+# - click>=8.0.0 (CLI framework)
+# - httpx>=0.24.0 (HTTP client)
+# - Pillow>=9.0.0 (image processing)
