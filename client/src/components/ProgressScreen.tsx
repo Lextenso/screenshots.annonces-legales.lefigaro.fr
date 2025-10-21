@@ -33,7 +33,9 @@ export default function ProgressScreen({
     stage: "fetching",
   });
   const abortControllerRef = useRef<AbortController | null>(null);
+  const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
   const abortedRef = useRef(false);
+  const hasStartedRef = useRef(false);
   const onSuccessRef = useRef(onSuccess);
   const onErrorRef = useRef(onError);
 
@@ -43,7 +45,11 @@ export default function ProgressScreen({
   }, [onSuccess, onError]);
 
   useEffect(() => {
-    let readerController: ReadableStreamDefaultReader<Uint8Array> | null = null;
+    if (hasStartedRef.current) {
+      return;
+    }
+    hasStartedRef.current = true;
+
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
@@ -66,7 +72,7 @@ export default function ProgressScreen({
           throw new Error("No response body");
         }
 
-        readerController = reader;
+        readerRef.current = reader;
         const decoder = new TextDecoder();
         let buffer = "";
 
@@ -134,13 +140,11 @@ export default function ProgressScreen({
     startCapture();
 
     return () => {
-      if (abortedRef.current) {
-        if (readerController) {
-          readerController.cancel();
-        }
-        if (abortControllerRef.current) {
-          abortControllerRef.current.abort();
-        }
+      if (readerRef.current) {
+        readerRef.current.cancel().catch(() => {});
+      }
+      if (controller && !controller.signal.aborted) {
+        controller.abort();
       }
     };
   }, [department, startDate]);
