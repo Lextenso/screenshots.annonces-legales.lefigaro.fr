@@ -2,6 +2,7 @@
 
 Application web pour automatiser la capture de screenshots d'articles du journal Le Figaro pour un département français spécifique sur une période de 7 semaines.
 
+
 ## 📋 Description
 
 Cette application permet de :
