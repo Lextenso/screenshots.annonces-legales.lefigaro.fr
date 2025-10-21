@@ -54,6 +54,9 @@ Cette application permet de :
 Configurez les variables suivantes :
 
 ```env
+# Server Configuration
+PORT=5000
+
 # SFTP Configuration
 SFTP_SERVEUR=votre-serveur.com
 SFTP_LOGIN=votre-username
@@ -138,11 +141,14 @@ sudo apt-get install -y \
 Créez un fichier `.env` à la racine du projet :
 
 ```env
+PORT=5000
+
 SFTP_SERVEUR=votre-serveur.com
 SFTP_LOGIN=votre-username
 SFTP_PASSWORD=votre-password
 SFTP_PORT=22
 SFTP_DIRECTORY=/uploads
+
 SESSION_SECRET=votre-secret-aleatoire-securise
 ```
 
