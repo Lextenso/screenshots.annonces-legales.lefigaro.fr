@@ -58,10 +58,7 @@ export class ScreenshotService extends EventEmitter {
     }
   }
 
-  async captureScreenshot(
-    url: string,
-    outputPath: string
-  ): Promise<void> {
+  async captureScreenshot(url: string, outputPath: string): Promise<void> {
     if (this.aborted) {
       throw new Error("Capture aborted");
     }
@@ -69,10 +66,18 @@ export class ScreenshotService extends EventEmitter {
     return new Promise((resolve, reject) => {
       const args = [
         url,
-        "--width", "1030",
-        "--timeout", "60000",
-        "--javascript", SHOT_SCRAPER_JS,
-        "--output", outputPath,
+        "--width",
+        "1030",
+        "--wait",
+        "2000",
+        "--log-requests",
+        "",
+        "--timeout",
+        "60000",
+        "--javascript",
+        SHOT_SCRAPER_JS,
+        "--output",
+        outputPath,
       ];
 
       const env = {
@@ -82,7 +87,7 @@ export class ScreenshotService extends EventEmitter {
 
       const childProcess = spawn("shot-scraper", args, { env });
       this.activeProcesses.add(childProcess);
-      
+
       let stderr = "";
 
       childProcess.stderr.on("data", (data: Buffer) => {
@@ -91,7 +96,7 @@ export class ScreenshotService extends EventEmitter {
 
       childProcess.on("close", (code: number | null) => {
         this.activeProcesses.delete(childProcess);
-        
+
         if (this.aborted) {
           reject(new Error("Capture aborted"));
         } else if (code === 0) {
@@ -110,7 +115,7 @@ export class ScreenshotService extends EventEmitter {
 
   async captureArticles(
     department: string,
-    startDate: string
+    startDate: string,
   ): Promise<string[]> {
     await this.ensureScreenshotsDir();
 
@@ -121,7 +126,10 @@ export class ScreenshotService extends EventEmitter {
     });
 
     // Fetch articles from API
-    const articles = await this.figaroService.fetchArticles(department, startDate);
+    const articles = await this.figaroService.fetchArticles(
+      department,
+      startDate,
+    );
 
     if (articles.length === 0) {
       throw new Error("Aucun article trouvé pour cette période");
@@ -138,17 +146,19 @@ export class ScreenshotService extends EventEmitter {
 
     // Capture screenshots in parallel with a limit
     const concurrency = 3; // Capture 3 at a time to avoid overwhelming the system
-    
+
     for (let i = 0; i < articles.length; i += concurrency) {
       if (this.aborted) {
         throw new Error("Capture aborted by user");
       }
 
       const batch = articles.slice(i, i + concurrency);
-      
+
       const promises = batch.map(async (article, batchIndex) => {
         const index = i + batchIndex + 1;
-        const formattedDate = this.figaroService.formatDateForFilename(article.date);
+        const formattedDate = this.figaroService.formatDateForFilename(
+          article.date,
+        );
         const filename = `${formattedDate} Département ${department} Le Figaro article ${index}.png`;
         const filePath = path.join(this.screenshotsDir, filename);
 
@@ -162,7 +172,7 @@ export class ScreenshotService extends EventEmitter {
         });
 
         await this.captureScreenshot(article.url, filePath);
-        
+
         return filePath;
       });
 
