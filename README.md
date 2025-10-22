@@ -208,12 +208,12 @@ Pour déployer sur Clever Cloud :
    - Ajouter le buildpack Python en plus du buildpack Node.js
    - Clever Cloud détectera automatiquement `requirements.txt`
 
-4. **Hooks de build** :
+4. **Build automatique** :
    Clever Cloud exécutera automatiquement :
    - `npm install` (installation des dépendances)
    - `pip install -r requirements.txt` (installation shot-scraper)
-   - `npm run build` (compilation frontend + backend)
-   - `npm start` (démarrage de l'application)
+   - `npm run postinstall` → `npm run build` (compilation frontend + backend via hook postinstall)
+   - `npm start` (démarrage de l'application depuis dist/index.js)
 
 5. **Post-déploiement** :
    ```bash
