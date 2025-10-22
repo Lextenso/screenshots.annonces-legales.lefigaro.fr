@@ -159,8 +159,8 @@ SESSION_SECRET=votre-secret-aleatoire-securise
 npm run dev
 
 # Production
-npm run build    # Si un script de build est disponible
-npm start
+npm run build    # Compile frontend (Vite) et backend (esbuild) vers dist/
+npm start        # Lance l'application compilée depuis dist/index.js
 ```
 
 ### Configuration serveur
@@ -186,6 +186,41 @@ pm2 startup
 - L'environnement doit avoir accès à Internet pour télécharger les navigateurs Playwright
 - Le serveur SFTP doit être accessible depuis votre hébergeur
 - Prévoyez suffisamment d'espace disque pour les captures temporaires (quelques centaines de Mo)
+
+### Déploiement sur Clever Cloud
+
+Pour déployer sur Clever Cloud :
+
+1. **Créer une application Node.js** sur Clever Cloud
+2. **Configurer les variables d'environnement** dans le dashboard :
+   ```
+   PORT=8080
+   SFTP_SERVEUR=...
+   SFTP_LOGIN=...
+   SFTP_PASSWORD=...
+   SFTP_PORT=22
+   SFTP_DIRECTORY=/uploads
+   SESSION_SECRET=...
+   ```
+
+3. **Ajouter Python buildpack** (pour shot-scraper) :
+   - Dans la configuration de l'application
+   - Ajouter le buildpack Python en plus du buildpack Node.js
+   - Clever Cloud détectera automatiquement `requirements.txt`
+
+4. **Hooks de build** :
+   Clever Cloud exécutera automatiquement :
+   - `npm install` (installation des dépendances)
+   - `pip install -r requirements.txt` (installation shot-scraper)
+   - `npm run build` (compilation frontend + backend)
+   - `npm start` (démarrage de l'application)
+
+5. **Post-déploiement** :
+   ```bash
+   shot-scraper install  # Peut nécessiter un script personnalisé
+   ```
+
+**Note** : Les bibliothèques système Playwright peuvent ne pas être disponibles sur tous les environnements Clever Cloud. Testez soigneusement après le déploiement.
 
 ## 🔧 Configuration technique
 
