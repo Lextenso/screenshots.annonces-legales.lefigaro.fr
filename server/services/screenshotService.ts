@@ -65,6 +65,9 @@ export class ScreenshotService extends EventEmitter {
 
     return new Promise((resolve, reject) => {
       const args = [
+        "-m",
+        "shot_scraper.cli",
+        "shot",
         url,
         "--width",
         "1030",
@@ -85,11 +88,11 @@ export class ScreenshotService extends EventEmitter {
         PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS: "true",
       };
 
-      const childProcess = spawn("shot-scraper", args, { env });
+      // ✅ On exécute Python avec le module shot_scraper.cli
+      const childProcess = spawn("python3", args, { env });
       this.activeProcesses.add(childProcess);
 
       let stderr = "";
-
       childProcess.stderr.on("data", (data: Buffer) => {
         stderr += data.toString();
       });
