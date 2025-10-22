@@ -70,6 +70,7 @@ export class ScreenshotService extends EventEmitter {
       const args = [
         url,
         "--width", "1030",
+        "--timeout", "60000",
         "--javascript", SHOT_SCRAPER_JS,
         "--output", outputPath,
       ];
